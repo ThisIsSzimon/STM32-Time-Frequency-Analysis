@@ -62,6 +62,30 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+/* Szybka konwersja int16 -> ASCII (bez printf/sprintf) */
+static char* i16toa(int16_t v, char* p)
+{
+  if (v == 0) { *p++ = '0'; return p; }
+  if (v < 0) { *p++ = '-'; v = (int16_t)-v; }
+  char tmp[6]; int n = 0;               /* int16: max 5 cyfr + znak */
+  while (v) { tmp[n++] = (char)('0' + (v % 10)); v /= 10; }
+  while (n--) *p++ = tmp[n];
+  return p;
+}
+
+/* Wyślij linię "x,y,z\n" po UART2 */
+/* Wyślij linię "x,y,z\r\n" po UART2 */
+static void send_xyz_ascii(int16_t x, int16_t y, int16_t z)
+{
+  char buf[32];
+  char *p = buf;
+  p = i16toa(x, p); *p++ = ',';
+  p = i16toa(y, p); *p++ = ',';
+  p = i16toa(z, p); *p++ = '\r';
+  *p++ = '\n';
+  HAL_UART_Transmit(&huart2, (uint8_t*)buf, (uint16_t)(p - buf), HAL_MAX_DELAY);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -97,7 +121,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
-  if (!ADXL_Init(&adxl, ADXL_ODR_3200HZ, ADXL_RANGE_2G, true)) {
+  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_2G, true)) {
     Error_Handler();
   }
   /* USER CODE END 2 */
@@ -106,11 +130,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    float gx, gy, gz;
-    if (ADXL_ReadXYZ_g(&adxl, &gx, &gy, &gz)) {
-      printf("X=%.3f g  Y=%.3f g  Z=%.3f g\r\n", gx, gy, gz);
-    } else {
-      /* Błąd odczytu */
+    int16_t x, y, z;
+    if (ADXL_ReadXYZ_raw(&adxl, &x, &y, &z)) {
+      send_xyz_ascii(x, y, z);
     }
     /* USER CODE END WHILE */
 
