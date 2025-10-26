@@ -121,7 +121,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
-  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_2G, true)) {
+  if (!ADXL_Init(&adxl, ADXL_ODR_3200HZ, ADXL_RANGE_2G, true)) {
     Error_Handler();
   }
   /* USER CODE END 2 */

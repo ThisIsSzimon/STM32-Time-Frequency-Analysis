@@ -2,18 +2,16 @@ import serial
 import csv
 import os
 
-# USTAW to na swój port i baud:
-PORT = "COM3"        # sprawdź w Menedżerze urządzeń (może u Ciebie COM6)
+PORT = "COM3"
 BAUD = 921600        # musi się zgadzać z MX_USART2_UART_Init()
 
-# Ścieżka: Core/Python/data/nowe_dane.csv
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, 'data')
 os.makedirs(data_dir, exist_ok=True)
-csv_path = os.path.join(data_dir, 'nowe_dane.csv')  # <- NADPISYWANIE
+csv_path = os.path.join(data_dir, 'nowe_dane.csv')
 
 ser = serial.Serial(PORT, BAUD, timeout=1)
-ser.reset_input_buffer()  # wyczyść śmieci z bufora na starcie
+ser.reset_input_buffer()
 
 with open(csv_path, mode='w', newline='') as file:
     w = csv.writer(file)
@@ -22,12 +20,11 @@ with open(csv_path, mode='w', newline='') as file:
     try:
         print(f"[INFO] Zapis do: {csv_path}  (PORT={PORT}, BAUD={BAUD})")
         while True:
-            # czytamy do \n (na MCU wysyłamy \r\n, pyserial utnie CR)
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if not line:
                 continue
 
-            print(line)  # echo do terminala, żeby widzieć surowe linie
+            print(line)
 
             parts = line.split(',')
             if len(parts) != 3:
@@ -42,7 +39,7 @@ with open(csv_path, mode='w', newline='') as file:
 
             w.writerow([x, y, z])
             written += 1
-            file.flush()  # flush po każdej linii (pewny zapis)
+            file.flush()
 
     except KeyboardInterrupt:
         print(f"\n[INFO] Zakończono. Zapisanych wierszy: {written}")
