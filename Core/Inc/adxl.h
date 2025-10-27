@@ -15,6 +15,9 @@ extern "C" {
 #define ADXL_REG_POWER_CTL    0x2D
 #define ADXL_REG_DATA_FORMAT  0x31
 #define ADXL_REG_DATAX0       0x32   // ... do 0x37
+#define ADXL_REG_INT_ENABLE   0x2E
+#define ADXL_REG_INT_MAP      0x2F
+#define ADXL_REG_INT_SOURCE   0x30
 
 /* --- Stałe --- */
 #define ADXL_DEVID_EXPECTED   0xE5
@@ -59,6 +62,8 @@ bool ADXL_SetODR(ADXL_Handle *dev, ADXL_ODR_t odr);
 bool ADXL_SetRange(ADXL_Handle *dev, ADXL_Range_t range, bool full_res);
 bool ADXL_ReadXYZ_raw(ADXL_Handle *dev, int16_t *x, int16_t *y, int16_t *z);
 bool ADXL_ReadXYZ_g(ADXL_Handle *dev, float *gx, float *gy, float *gz);
+bool ADXL_EnableDataReady(ADXL_Handle *dev, bool enable);
+bool ADXL_ReadXYZ_wait_dr(ADXL_Handle *dev, int16_t *x, int16_t *y, int16_t *z, uint32_t timeout_ms);
 uint8_t ADXL_ReadID(ADXL_Handle *dev);
 
 /* --- Niskopoziomowe (przydatne czasem) --- */

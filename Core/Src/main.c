@@ -131,7 +131,7 @@ int main(void)
   while (1)
   {
     int16_t x, y, z;
-    if (ADXL_ReadXYZ_raw(&adxl, &x, &y, &z)) {
+    if (ADXL_ReadXYZ_wait_dr(&adxl, &x, &y, &z, 2)) {
       send_xyz_ascii(x, y, z);
     }
     /* USER CODE END WHILE */

@@ -37,6 +37,37 @@ bool ADXL_ReadRegs(ADXL_Handle *dev, uint8_t start_reg, uint8_t *buf, uint16_t l
 }
 
 /* --- Wysokopoziomowe --- */
+bool ADXL_EnableDataReady(ADXL_Handle *dev, bool enable)
+{
+  /* Włączamy tylko bit DATA_READY (bit7) w INT_ENABLE.
+     Jeżeli w przyszłości będziesz chciał dokładać inne bity,
+     zmień tu na RMW (read-modify-write). */
+  uint8_t val = enable ? 0x80 : 0x00;  // bit7 = DATA_READY
+  return ADXL_WriteReg(dev, ADXL_REG_INT_ENABLE, val);
+}
+
+bool ADXL_ReadXYZ_wait_dr(ADXL_Handle *dev, int16_t *x, int16_t *y, int16_t *z, uint32_t timeout_ms)
+{
+  uint32_t t0 = HAL_GetTick();
+  uint8_t src = 0;
+
+  /* Czekaj aż INT_SOURCE.DATA_READY (bit7) = 1 */
+  for (;;)
+  {
+    if (!ADXL_ReadRegs(dev, ADXL_REG_INT_SOURCE, &src, 1))
+      return false;
+
+    if (src & 0x80)  // DATA_READY
+      break;
+
+    if (timeout_ms > 0 && (HAL_GetTick() - t0) >= timeout_ms)
+      return false;
+  }
+
+  /* Odczyt 6 bajtów X/Y/Z (clears the data-ready) */
+  return ADXL_ReadXYZ_raw(dev, x, y, z);
+}
+
 uint8_t ADXL_ReadID(ADXL_Handle *dev)
 {
   uint8_t id = 0;
@@ -63,20 +94,17 @@ bool ADXL_SetRange(ADXL_Handle *dev, ADXL_Range_t range, bool full_res)
 
 bool ADXL_Init(ADXL_Handle *dev, ADXL_ODR_t odr, ADXL_Range_t range, bool full_res)
 {
-  /* CS w spoczynku w stanie wysokim */
   cs_high(dev);
 
-  /* Sprawdź ID */
   if (ADXL_ReadID(dev) != ADXL_DEVID_EXPECTED) return false;
-
-  /* Ustaw ODR */
   if (!ADXL_SetODR(dev, odr)) return false;
-
-  /* Ustaw zakres i tryb rozdzielczości */
   if (!ADXL_SetRange(dev, range, full_res)) return false;
 
-  /* Włącz pomiar (POWER_CTL.Measure=1) */
+  /* Włącz pomiar */
   if (!ADXL_WriteReg(dev, ADXL_REG_POWER_CTL, 0x08)) return false;
+
+  /* NOWE: włącz raportowanie DATA_READY (tylko do rejestru – bez pinów) */
+  if (!ADXL_EnableDataReady(dev, true)) return false;
 
   return true;
 }
