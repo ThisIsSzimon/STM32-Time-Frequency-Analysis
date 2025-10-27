@@ -106,6 +106,8 @@ bool ADXL_Init(ADXL_Handle *dev, ADXL_ODR_t odr, ADXL_Range_t range, bool full_r
   /* NOWE: włącz raportowanie DATA_READY (tylko do rejestru – bez pinów) */
   if (!ADXL_EnableDataReady(dev, true)) return false;
 
+  if (!ADXL_FifoStreamEnable(dev, 16)) return false;
+  
   return true;
 }
 
@@ -129,4 +131,50 @@ bool ADXL_ReadXYZ_g(ADXL_Handle *dev, float *gx, float *gy, float *gz)
   *gy = y * dev->lsb_to_g;
   *gz = z * dev->lsb_to_g;
   return true;
+}
+
+bool ADXL_FifoStreamEnable(ADXL_Handle *dev, uint8_t watermark_samples)
+{
+  // Tryb STREAM: bity [7:6] = 0b10, watermark w [4:0] (1..32); 0 = 1 w niektórych opisach, tu obetniemy do 31
+  uint8_t wm = (watermark_samples > 31) ? 31 : watermark_samples;
+  uint8_t fifo_ctl = (2u << 6) | (wm & 0x1F);  // STREAM + watermark
+  return ADXL_WriteReg(dev, ADXL_REG_FIFO_CTL, fifo_ctl);
+}
+
+static inline uint8_t adxl_fifo_entries(ADXL_Handle *dev)
+{
+  uint8_t st = 0;
+  if (!ADXL_ReadRegs(dev, ADXL_REG_FIFO_STATUS, &st, 1)) return 0;
+  return (uint8_t)(st & 0x3F);  // [5:0] = liczba próbek w FIFO (0..32)
+}
+
+int ADXL_FifoReadSamples(ADXL_Handle *dev, int16_t *xyz_buf, int max_samples)
+{
+  if (max_samples <= 0) return 0;
+
+  int got = 0;
+
+  uint8_t entries = adxl_fifo_entries(dev);
+  if (entries == 0) return 0;
+
+  if (entries > 32) entries = 32;
+  if (entries > max_samples) entries = max_samples;
+
+  // (ADXL345 po odczycie 6 B z DATAX0 przy FIFO oddaje kolejne próbki).
+  for (int i = 0; i < entries; ++i)
+  {
+    uint8_t b[6];
+    if (!ADXL_ReadRegs(dev, ADXL_REG_DATAX0, b, 6)) break;
+
+    int16_t x = (int16_t)((b[1] << 8) | b[0]);
+    int16_t y = (int16_t)((b[3] << 8) | b[2]);
+    int16_t z = (int16_t)((b[5] << 8) | b[4]);
+
+    xyz_buf[3*got + 0] = x;
+    xyz_buf[3*got + 1] = y;
+    xyz_buf[3*got + 2] = z;
+    got++;
+  }
+
+  return got;
 }

@@ -62,29 +62,45 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-/* Szybka konwersja int16 -> ASCII (bez printf/sprintf) */
-static char* i16toa(int16_t v, char* p)
+#define FIFO_CHUNK 16
+
+static int16_t fifo_buf[FIFO_CHUNK * 3];
+static uint32_t sample_id = 0;
+
+static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8_t n)
 {
-  if (v == 0) { *p++ = '0'; return p; }
-  if (v < 0) { *p++ = '-'; v = (int16_t)-v; }
-  char tmp[6]; int n = 0;               /* int16: max 5 cyfr + znak */
-  while (v) { tmp[n++] = (char)('0' + (v % 10)); v /= 10; }
-  while (n--) *p++ = tmp[n];
-  return p;
+  if (n == 0 || n > 16) return;
+
+  uint16_t frame_len = (uint16_t)(8 + 6 * n);
+  uint8_t frame[8 + 6*16];  // max 104 B
+
+  frame[0] = 0xAA; frame[1] = 0x55;
+  frame[2] = n;
+
+  frame[3] = (uint8_t)( start_id        & 0xFF);
+  frame[4] = (uint8_t)((start_id >> 8)  & 0xFF);
+  frame[5] = (uint8_t)((start_id >> 16) & 0xFF);
+  frame[6] = (uint8_t)((start_id >> 24) & 0xFF);
+
+  // payload: N * (x,y,z) int16 LE
+  uint16_t w = 7;
+  for (uint8_t i = 0; i < n; ++i) {
+    int16_t x = buf_xyz[3*i + 0];
+    int16_t y = buf_xyz[3*i + 1];
+    int16_t z = buf_xyz[3*i + 2];
+    frame[w++] = (uint8_t)(x & 0xFF); frame[w++] = (uint8_t)((uint16_t)x >> 8);
+    frame[w++] = (uint8_t)(y & 0xFF); frame[w++] = (uint8_t)((uint16_t)y >> 8);
+    frame[w++] = (uint8_t)(z & 0xFF); frame[w++] = (uint8_t)((uint16_t)z >> 8);
+  }
+
+  // checksum od [2] do przedostatniego
+  uint8_t sum = 0;
+  for (uint16_t i = 2; i < frame_len - 1; ++i) sum = (uint8_t)(sum + frame[i]);
+  frame[frame_len - 1] = sum;
+
+  HAL_UART_Transmit(&huart2, frame, frame_len, HAL_MAX_DELAY);
 }
 
-/* Wyślij linię "x,y,z\n" po UART2 */
-/* Wyślij linię "x,y,z\r\n" po UART2 */
-static void send_xyz_ascii(int16_t x, int16_t y, int16_t z)
-{
-  char buf[32];
-  char *p = buf;
-  p = i16toa(x, p); *p++ = ',';
-  p = i16toa(y, p); *p++ = ',';
-  p = i16toa(z, p); *p++ = '\r';
-  *p++ = '\n';
-  HAL_UART_Transmit(&huart2, (uint8_t*)buf, (uint16_t)(p - buf), HAL_MAX_DELAY);
-}
 
 /* USER CODE END 0 */
 
@@ -121,7 +137,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
-  if (!ADXL_Init(&adxl, ADXL_ODR_3200HZ, ADXL_RANGE_2G, true)) {
+  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_2G, true)) {
     Error_Handler();
   }
   /* USER CODE END 2 */
@@ -130,10 +146,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    int16_t x, y, z;
-    if (ADXL_ReadXYZ_wait_dr(&adxl, &x, &y, &z, 2)) {
-      send_xyz_ascii(x, y, z);
-    }
+    int n = ADXL_FifoReadSamples(&adxl, fifo_buf, FIFO_CHUNK);
+    if (n <= 0) continue;
+    uint32_t start_id = sample_id;
+    sample_id += (uint32_t)n;
+
+    send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

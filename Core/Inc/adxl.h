@@ -18,6 +18,8 @@ extern "C" {
 #define ADXL_REG_INT_ENABLE   0x2E
 #define ADXL_REG_INT_MAP      0x2F
 #define ADXL_REG_INT_SOURCE   0x30
+#define ADXL_REG_FIFO_CTL     0x38
+#define ADXL_REG_FIFO_STATUS  0x39
 
 /* --- Stałe --- */
 #define ADXL_DEVID_EXPECTED   0xE5
@@ -64,6 +66,8 @@ bool ADXL_ReadXYZ_raw(ADXL_Handle *dev, int16_t *x, int16_t *y, int16_t *z);
 bool ADXL_ReadXYZ_g(ADXL_Handle *dev, float *gx, float *gy, float *gz);
 bool ADXL_EnableDataReady(ADXL_Handle *dev, bool enable);
 bool ADXL_ReadXYZ_wait_dr(ADXL_Handle *dev, int16_t *x, int16_t *y, int16_t *z, uint32_t timeout_ms);
+bool ADXL_FifoStreamEnable(ADXL_Handle *dev, uint8_t watermark_samples);
+int  ADXL_FifoReadSamples(ADXL_Handle *dev, int16_t *xyz_buf, int max_samples);
 uint8_t ADXL_ReadID(ADXL_Handle *dev);
 
 /* --- Niskopoziomowe (przydatne czasem) --- */
