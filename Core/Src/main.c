@@ -82,7 +82,6 @@ static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8
   frame[5] = (uint8_t)((start_id >> 16) & 0xFF);
   frame[6] = (uint8_t)((start_id >> 24) & 0xFF);
 
-  // payload: N * (x,y,z) int16 LE
   uint16_t w = 7;
   for (uint8_t i = 0; i < n; ++i) {
     int16_t x = buf_xyz[3*i + 0];
@@ -93,7 +92,6 @@ static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8
     frame[w++] = (uint8_t)(z & 0xFF); frame[w++] = (uint8_t)((uint16_t)z >> 8);
   }
 
-  // checksum od [2] do przedostatniego
   uint8_t sum = 0;
   for (uint16_t i = 2; i < frame_len - 1; ++i) sum = (uint8_t)(sum + frame[i]);
   frame[frame_len - 1] = sum;
