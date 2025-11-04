@@ -7,7 +7,7 @@ FS = 1600 # częstotliwość próbkowania ADXL345
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
 os.makedirs(data_dir, exist_ok=True)
-csv_path = os.path.join(data_dir, f"dane_bin_fifo_4s_2g.csv")
+csv_path = os.path.join(data_dir, f"pomiar_z_50.csv")
 
 SYNC = b'\xAA\x55'
 
