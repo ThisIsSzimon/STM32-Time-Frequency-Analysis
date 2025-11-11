@@ -19,12 +19,15 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "spi.h"
+#include "stm32f4xx_hal_tim.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "adxl.h"
+#include <stdint.h>
 #include <stdio.h>
 /* USER CODE END Includes */
 
@@ -35,7 +38,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define RPM_MAX 12000
+#define RPM_MIN 1000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,6 +55,9 @@ ADXL_Handle adxl = {
   .cs_port = SPI2_CS_GPIO_Port,
   .cs_pin  = SPI2_CS_Pin,
 };
+volatile uint32_t rpm = 0;
+volatile uint8_t rpm_valid = 0;
+volatile uint32_t last_pulse_ms = 0; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -133,9 +140,11 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI2_Init();
   MX_USART2_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start(&htim2);
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
-  if (!ADXL_Init(&adxl, ADXL_ODR_3200HZ, ADXL_RANGE_4G, true)) {
+  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_8G, true)) {
     Error_Handler();
   }
   /* USER CODE END 2 */
@@ -144,12 +153,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    
     int n = ADXL_FifoReadSamples(&adxl, fifo_buf, FIFO_CHUNK);
-    if (n <= 0) continue;
-    uint32_t start_id = sample_id;
-    sample_id += (uint32_t)n;
+    if (n > 0) {
+      uint32_t start_id = sample_id;
+      sample_id += (uint32_t)n;
+      //send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
+    }
+    
+    uint32_t now_ms = HAL_GetTick();
+    uint32_t timeout_ms = 2 * (60000UL / RPM_MIN); // 2 okresy [ms]
+    if (rpm_valid && (now_ms - last_pulse_ms > timeout_ms)) {
+      rpm_valid = 0;
+      rpm = 0;
+    }
+    static uint32_t last_report = 0;
+    if (now_ms - last_report >= 200) {
+      last_report = now_ms;
 
-    send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
+      char msg[32];
+      uint32_t rpm_snapshot = rpm; // atomowy odczyt (32 bity na F4 jest OK)
+
+      int len = snprintf(msg, sizeof(msg), "RPM:%lu\r\n", (unsigned long)rpm_snapshot);
+      HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
+    }
+       
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -205,7 +233,32 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == GPIO_PIN_0)
+  {
+    static uint32_t last = 0;
 
+    uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
+    uint32_t dt = now - last;           // liczy poprawnie także po overflow
+    last = now;
+
+    uint32_t dt_min = 60000000UL / RPM_MAX; // ~5000 us
+    uint32_t dt_max = 60000000UL / RPM_MIN; // ~600000 us
+
+    if (dt > dt_min && dt < dt_max)  // luzny zakres zabezpieczający
+    {
+      uint32_t new_rpm = 60000000UL / dt;
+      rpm = new_rpm;
+      rpm_valid = 1;
+      last_pulse_ms = HAL_GetTick();
+    }
+    else
+    {
+
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /**
