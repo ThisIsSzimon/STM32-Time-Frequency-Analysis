@@ -7,7 +7,7 @@ FS = 1600 # częstotliwość próbkowania ADXL345
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
 os.makedirs(data_dir, exist_ok=True)
-csv_path = os.path.join(data_dir, f"wiertarka/01_wiertarka_3200Hz.csv")
+csv_path = os.path.join(data_dir, f"daneTestowe/silnik_wibracyjny_1600Hz.csv")
 
 SYNC = b'\xAA\x55'
 

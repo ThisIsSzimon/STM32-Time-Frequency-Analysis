@@ -158,7 +158,7 @@ int main(void)
     if (n > 0) {
       uint32_t start_id = sample_id;
       sample_id += (uint32_t)n;
-      //send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
+      send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
     }
     
     uint32_t now_ms = HAL_GetTick();
