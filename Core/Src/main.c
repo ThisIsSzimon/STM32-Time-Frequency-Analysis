@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "spi.h"
-#include "stm32f4xx_hal_tim.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -144,7 +143,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start(&htim2);
   HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_SET);
-  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_8G, true)) {
+  if (!ADXL_Init(&adxl, ADXL_ODR_1600HZ, ADXL_RANGE_16G, true)) {
     Error_Handler();
   }
   /* USER CODE END 2 */
