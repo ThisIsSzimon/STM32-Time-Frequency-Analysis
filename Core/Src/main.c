@@ -38,7 +38,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define RPM_MAX 12000
-#define RPM_MIN 1000
+#define RPM_MIN 500
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
