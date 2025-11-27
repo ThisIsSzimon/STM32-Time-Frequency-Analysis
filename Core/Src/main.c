@@ -38,7 +38,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define RPM_MAX 12000
-#define RPM_MIN 500
+#define RPM_MIN 700
+#define RPM_AVG_WINDOW 8
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -77,11 +78,14 @@ static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8
 {
   if (n == 0 || n > 16) return;
 
-  uint16_t frame_len = (uint16_t)(8 + 6 * n);
-  uint8_t frame[8 + 6*16];  // max 104 B
+  // 2 (SYNC) + 1 (N') + 4 (start_id) + 6*n (XYZ) + 4 (rpm) + 1 (checksum)
+  const uint16_t frame_len = (uint16_t)(8 + 6 * n + 4);    // <-- TU BYŁA POMYŁKA
 
-  frame[0] = 0xAA; frame[1] = 0x55;
-  frame[2] = n;
+  uint8_t frame[8 + 6*16 + 4 + 1];  // max 109 bajtów, mamy zapas
+
+  frame[0] = 0xAA;
+  frame[1] = 0x55;
+  frame[2] = (uint8_t)(n | 0x80);   // bit7=1 => obecny trailer RPM
 
   frame[3] = (uint8_t)( start_id        & 0xFF);
   frame[4] = (uint8_t)((start_id >> 8)  & 0xFF);
@@ -98,8 +102,18 @@ static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8
     frame[w++] = (uint8_t)(z & 0xFF); frame[w++] = (uint8_t)((uint16_t)z >> 8);
   }
 
+  // snapshot RPM (4 bajty LE)
+  uint32_t rpm_snapshot = rpm_valid ? rpm : 0;
+  frame[w++] = (uint8_t)( rpm_snapshot        & 0xFF);
+  frame[w++] = (uint8_t)((rpm_snapshot >> 8 ) & 0xFF);
+  frame[w++] = (uint8_t)((rpm_snapshot >> 16) & 0xFF);
+  frame[w++] = (uint8_t)((rpm_snapshot >> 24) & 0xFF);
+
+  // checksum: suma z [N', start_id, payload, rpm] (od bajtu 2 do frame_len-2)
   uint8_t sum = 0;
-  for (uint16_t i = 2; i < frame_len - 1; ++i) sum = (uint8_t)(sum + frame[i]);
+  for (uint16_t i = 2; i < frame_len - 1; ++i)
+    sum = (uint8_t)(sum + frame[i]);
+
   frame[frame_len - 1] = sum;
 
   HAL_UART_Transmit(&huart2, frame, frame_len, HAL_MAX_DELAY);
@@ -157,7 +171,7 @@ int main(void)
     if (n > 0) {
       uint32_t start_id = sample_id;
       sample_id += (uint32_t)n;
-      //send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
+      send_fifo_bin_batch(start_id, fifo_buf, (uint8_t)n);
     }
     
     uint32_t now_ms = HAL_GetTick();
@@ -165,16 +179,6 @@ int main(void)
     if (rpm_valid && (now_ms - last_pulse_ms > timeout_ms)) {
       rpm_valid = 0;
       rpm = 0;
-    }
-    static uint32_t last_report = 0;
-    if (now_ms - last_report >= 200) {
-      last_report = now_ms;
-
-      char msg[32];
-      uint32_t rpm_snapshot = rpm; // atomowy odczyt (32 bity na F4 jest OK)
-
-      int len = snprintf(msg, sizeof(msg), "RPM:%lu\r\n", (unsigned long)rpm_snapshot);
-      HAL_UART_Transmit(&huart2, (uint8_t*)msg, len, HAL_MAX_DELAY);
     }
        
     /* USER CODE END WHILE */
@@ -238,24 +242,40 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   {
     static uint32_t last = 0;
 
+    // historia dt do uśredniania
+    static uint32_t dt_hist[RPM_AVG_WINDOW];
+    static uint8_t  dt_hist_count = 0;
+    static uint8_t  dt_hist_idx = 0;
+    static uint32_t dt_sum = 0;   // suma dt w oknie
+
     uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
-    uint32_t dt = now - last;           // liczy poprawnie także po overflow
+    uint32_t dt  = now - last;           // liczy poprawnie także po overflow
     last = now;
 
-    uint32_t dt_min = 60000000UL / RPM_MAX; // ~5000 us
-    uint32_t dt_max = 60000000UL / RPM_MIN; // ~600000 us
+    uint32_t dt_min = 60000000UL / RPM_MAX;
+    uint32_t dt_max = 60000000UL / RPM_MIN;
 
-    if (dt > dt_min && dt < dt_max)  // luzny zakres zabezpieczający
+    if (dt > dt_min && dt < dt_max)
     {
-      uint32_t new_rpm = 60000000UL / dt;
+      // aktualizacja bufora kroczącego
+      if (dt_hist_count < RPM_AVG_WINDOW) {
+        dt_hist[dt_hist_count++] = dt;
+        dt_sum += dt;
+      } else {
+        dt_sum -= dt_hist[dt_hist_idx];
+        dt_hist[dt_hist_idx] = dt;
+        dt_sum += dt;
+        dt_hist_idx = (uint8_t)((dt_hist_idx + 1) % RPM_AVG_WINDOW);
+      }
+
+      uint32_t dt_avg = dt_sum / dt_hist_count;      // średni okres z ostatnich N
+      uint32_t new_rpm = 60000000UL / dt_avg;        // RPM z uśrednionego dt
+
       rpm = new_rpm;
       rpm_valid = 1;
       last_pulse_ms = HAL_GetTick();
     }
-    else
-    {
-
-    }
+    // poza zakresem – ignorujemy jako śmieć
   }
 }
 /* USER CODE END 4 */
