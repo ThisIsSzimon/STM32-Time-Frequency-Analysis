@@ -5,19 +5,21 @@ Projekt polega na wykrywaniu określonych wibracji konstrukcji drona w celu odr�
 Używany jest również czujnik odbiciowy w celu pomiaru prędkości obrotowej silnika. Dane następnie są wysyłane po magistrali UART do komputera aby tam jest następnie analizować w języku Python.
 
 Najważniejsze programy:
-- `Core/Src/main.c` - program do odczytu danych z akcelerometra i ich wysyłania do komputera
-- `Core/Python/logger_bin_fifo.py` - program do zapisu danych do plików .csv
-- `Core/Python/pre_analysis_fft_stft.ipynb` - program do wstępnego zapoznania się z badanych sygnałem, jego widmem oraz krótkoczasowej analizy Fouriera
-- `Core/Python/Detekcja_uszkodzenia.ipynb` - analiza danych śmigła zdrowego i uszkodzonego oraz wstępna ekstrakcja cech
-- `Core/Python/Detekcja_materiału.ipynb` - analiza danych śmiegieł wykonanych z dwóch różnych materiałów oraz zaimplementowanie modelu uczenia maszynowego w celu identyfikacji materiału
+- [main.c](Core/Src/main.c) - program do odczytu danych z akcelerometra i ich wysyłania do komputera
+- [logger_bin_fifo.py](Core/Python/logger_bin_fifo.py) - program do zapisu danych do plików `.csv`
+- [pre_analysis_fft_stft.ipynb](Core/Python/pre_analysis_fft_stft.ipynb) - wstępna analiza badanego sygnału, jego widma oraz krótkoczasowej transformaty Fouriera (STFT)
+- [Detekcja_uszkodzenia.ipynb](Core/Python/Detekcja_uszkodzenia.ipynb) - analiza danych śmigła zdrowego i uszkodzonego oraz wstępna ekstrakcja cech.
+- [Detekcja_materiału.ipynb](Core/Python/Detekcja_materiału.ipynb) - analiza danych śmiegieł wykonanych z dwóch różnych materiałów oraz zaimplementowanie modelu uczenia maszynowego w celu identyfikacji materiału
 
 ## 2. Środowisko
+
 - STM32CubeIDE (for Visual Studio Code)
 - Mission Planner
 - Python 3.12, biblioteki: `pandas`, `numpy`, `matplotlib`, `scipy`, `pywt`, `scikit-learn`, `joblib`, `serial`, `csv`
 
 ## 3. Sposób akwizycji danych
-Po wgraniu programu na mikrokontroler z `main.c` oraz komunikacji drona z programem **Mission Planner**, używamy `logger_bin_fifo.py` do zapisu danych z akcelerometra. Program ten uruchamiamy i np. uruchamamiamy danych silnik (w tym przypadku "Motor Test").
+
+Po wgraniu programu na mikrokontroler z `main.c` oraz komunikacji drona z programem **Mission Planner**, używamy `logger_bin_fifo.py` do zapisu danych z akcelerometra. Program ten uruchamiamy i uruchamamiamy dany silnik (w tym przypadku "Motor Test").
 Po zakończonych testach silników zatrzymujemy pomiar **Ctrl+C** na konsoli. Dane znajdują się we wcześniej określonym przez nas lokalizacji pliku `.csv` i są gotowe do dalszej analizy. 
 
 Dane są w następującej formie:
@@ -32,8 +34,22 @@ czas [s],X,Y,Z,rpm
 0.003125000000181899,-16,-10,244,0
 0.003749999999854481,6,-30,238,0
 ```
-### Dane można wstępnie podejrzeć w programie `pre_analysis_fft_stft.ipynb`
+### Dane można wstępnie podejrzeć w programie [pre_analysis_fft_stft.ipynb](Core/Python/pre_analysis_fft_stft.ipynb)
 
-![](Plots/wstepne_analiza_3x_sygnaly.png)
+![](Core/Plots/wstepne_analiza_3x_sygnaly.png)
 
+![](Core/Plots/wstepna_analiza_wybrany_sygnal.png)
+
+![](Core/Plots/wstępna_analiza_widmo.png)
+
+## 4. Prowadzone badania
+Tutaj odsyłam do szczegółowych analiz sygnałów z modelami uczenia maszynowego. Analizy te:
+- wyodrębniają fragmenty sygnałów odpowiadające **stabilnej pracy** silnika,
+- porównują widma sygnałów w celu sprawdzenia powtarzalności pomiarów,
+- prezentują wyniki analizy czasowo-częstotliwościowej, m.in. krótkoczasowej transformaty Fouriera (STFT) oraz ciągłej transformaty falkowej (CWT),
+- wyodrębniają cechy na potrzeby modeli uczenia maszynowego.
+
+[Detekcja materiału](Core/Python/Detekcja_materiału.ipynb) - gotowa analiza z użyciem modelu uczenia maszynowego do określenia materiału śmigła.
+
+[Detekcja uszkodzenia](Core/Python/Detekcja_uszkodzenia.ipynb) - analiza sygnałów wraz ze wstępnym wyodrębnieniem cech do modelu uczenia maszynowego.
 
