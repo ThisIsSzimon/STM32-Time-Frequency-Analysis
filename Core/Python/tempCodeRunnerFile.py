@@ -1,4 +1,2 @@
 
-
-def read_frame(ser):
-    hdr = ser.read(1 + 4)          # N' + start_id(4)
+base_dir = os.path.dirname(os.path.abspath(__file__))
