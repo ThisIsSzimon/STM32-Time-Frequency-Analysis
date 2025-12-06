@@ -2,7 +2,7 @@ import serial, csv, os, struct, time
 
 PORT = "COM3"
 BAUD = 921600
-FS = 3200 # częstotliwość próbkowania ADXL345
+FS = 3200 # częstotliwość próbkowania ADXL345 TUTAJ POWINIENEM DAĆ 1600 A NIE 3200
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
