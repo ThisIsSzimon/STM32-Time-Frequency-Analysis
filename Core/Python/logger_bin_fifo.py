@@ -2,12 +2,12 @@ import serial, csv, os, struct, time
 
 PORT = "COM3"
 BAUD = 921600
-FS = 3200 # częstotliwość próbkowania ADXL345 TUTAJ POWINIENEM DAĆ 1600 A NIE 3200
+FS = 1600
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(base_dir, "data")
 os.makedirs(data_dir, exist_ok=True)
-csv_path = os.path.join(data_dir, f"pomiary_finalne/fabryczne_nieuszkodzone/pwm_20%/3200Hz_fabryczne_nieuszkodzone_20%.csv")
+csv_path = os.path.join(data_dir, f"pomiary_finalne/KV.csv")
 
 
 SYNC = b'\xAA\x55'
