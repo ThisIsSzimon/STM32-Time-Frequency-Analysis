@@ -1,0 +1,40 @@
+{
+  "feature_cols": [
+    "E_0_40",
+    "E_40_100",
+    "Var_200_400",
+    "E_HF_minus_LF",
+    "mean_db",
+    "spec_flatness",
+    "A_rot",
+    "A_2rot",
+    "A_rot_HF_ratio"
+  ],
+  "bands": [
+    [
+      0.5,
+      40
+    ],
+    [
+      40,
+      100
+    ],
+    [
+      100,
+      200
+    ],
+    [
+      200,
+      400
+    ]
+  ],
+  "fft_params": {
+    "hp_cut_hz": 5.0,
+    "pad_factor": 8,
+    "rot_band_width_hz": 2.0,
+    "hf_band": [
+      200.0,
+      400.0
+    ]
+  }
+}

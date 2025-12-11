@@ -1,0 +1,30 @@
+{
+  "data_utworzenia": "2025-12-10T02:09:14.275330",
+  "autor": "System diagnostyki śmigieł",
+  "wersja": "1.0",
+  "opis": "Model do klasyfikacji stanu śmigła (nieuszkodzone/uszkodzone)",
+  "parametry": {
+    "n_estimators": 200,
+    "max_depth": null,
+    "min_samples_split": 5,
+    "min_samples_leaf": 2,
+    "random_state": 42
+  },
+  "cechy": [
+    "X_mean",
+    "X_skewness",
+    "Y_mean",
+    "Y_skewness",
+    "Y_cwt_high_low_ratio",
+    "Z_spectral_spread",
+    "Z_spectral_entropy",
+    "Z_high_peak_amp",
+    "Z_E_200_300",
+    "Z_cwt_std_db"
+  ],
+  "liczba_cech": 10,
+  "dokladnosc_trening": 1.0,
+  "dokladnosc_test": 1.0,
+  "falka_cwt": "cmor3.5-2.0",
+  "uwagi": "Model używa 10 cech wybranych przez RFECV"
+}

@@ -1,0 +1,8 @@
+{
+  "BASELINE_LEN_S": 0.5,
+  "SMOOTH_LEN_S": 0.05,
+  "STD_THRESHOLD": 3.0,
+  "DELAY_AFTER_JUMP": 1.0,
+  "WINDOW_LEN_S": 12.0,
+  "LSB_TO_G": 0.0039
+}

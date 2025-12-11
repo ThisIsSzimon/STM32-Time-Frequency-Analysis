@@ -1,0 +1,12 @@
+[
+  "X_mean",
+  "X_skewness",
+  "Y_mean",
+  "Y_skewness",
+  "Y_cwt_high_low_ratio",
+  "Z_spectral_spread",
+  "Z_spectral_entropy",
+  "Z_high_peak_amp",
+  "Z_E_200_300",
+  "Z_cwt_std_db"
+]
