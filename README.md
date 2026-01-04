@@ -8,7 +8,7 @@ Najważniejsze programy:
 - [main.c](Core/Src/main.c) - program do odczytu danych z akcelerometra i ich wysyłania do komputera
 - [logger_bin_fifo.py](Core/Python/logger_bin_fifo.py) - program do zapisu danych do plików `.csv`
 - [pre_analysis_fft_stft.ipynb](Core/Python/pre_analysis_fft_stft.ipynb) - wstępna analiza badanego sygnału, jego widma oraz krótkoczasowej transformaty Fouriera (STFT)
-- [Detekcja_uszkodzenia.ipynb](Core/Python/Detekcja_uszkodzenia.ipynb) - analiza danych śmigła zdrowego i uszkodzonego oraz wstępna ekstrakcja cech.
+- [Detekcja_uszkodzenia.ipynb](Core/Python/Detekcja_uszkodzenia_nowe.ipynb) - analiza danych śmigła zdrowego i uszkodzonego oraz wstępna ekstrakcja cech.
 - [Detekcja_materiału.ipynb](Core/Python/Detekcja_materiału.ipynb) - analiza danych śmiegieł wykonanych z dwóch różnych materiałów oraz zaimplementowanie modelu uczenia maszynowego w celu identyfikacji materiału
 
 ## 2. Środowisko
@@ -51,5 +51,5 @@ Tutaj odsyłam do szczegółowych analiz sygnałów z modelami uczenia maszynowe
 
 [Detekcja materiału](Core/Python/Detekcja_materiału.ipynb) - gotowa analiza z użyciem modelu uczenia maszynowego do określenia materiału śmigła.
 
-[Detekcja uszkodzenia](Core/Python/Detekcja_uszkodzenia.ipynb) - analiza sygnałów wraz ze wstępnym wyodrębnieniem cech do modelu uczenia maszynowego.
+[Detekcja uszkodzenia](Core/Python/Detekcja_uszkodzenia_nowe.ipynb) - analiza sygnałów wraz ze wstępnym wyodrębnieniem cech do modelu uczenia maszynowego.
 
