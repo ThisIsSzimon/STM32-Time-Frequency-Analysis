@@ -79,7 +79,7 @@ static void send_fifo_bin_batch(uint32_t start_id, const int16_t *buf_xyz, uint8
   if (n == 0 || n > 16) return;
 
   // 2 (SYNC) + 1 (N') + 4 (start_id) + 6*n (XYZ) + 4 (rpm) + 1 (checksum)
-  const uint16_t frame_len = (uint16_t)(8 + 6 * n + 4);    // <-- TU BYŁA POMYŁKA
+  const uint16_t frame_len = (uint16_t)(8 + 6 * n + 4);
 
   uint8_t frame[8 + 6*16 + 4 + 1];  // max 109 bajtów, mamy zapas
 
